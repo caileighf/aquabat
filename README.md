@@ -7,13 +7,13 @@
 ```
 #### Download and Build UL Lib
 ```
-$ wget -N https://github.com/mccdaq/uldaq/releases/download/v1.2.0/libuldaq-1.2.0.tar.bz2
-$ tar -xvjf libuldaq-1.2.0.tar.bz2
-$ cd libuldaq-1.2.0
-$ ./configure && make
-$ sudo make install
-$ cd examples
-$ ./AIn
+	$ wget -N https://github.com/mccdaq/uldaq/releases/download/v1.2.0/libuldaq-1.2.0.tar.bz2
+	$ tar -xvjf libuldaq-1.2.0.tar.bz2
+	$ cd libuldaq-1.2.0
+	$ ./configure && make
+	$ sudo make install
+	$ cd examples
+	$ ./AIn
 ```
 
 #### Install Python Packages
@@ -21,11 +21,16 @@ $ ./AIn
    $ pip install -r requirements.txt
 ```
 
-#### Run Example
+#### Run ULDaq Example
 First download `uldaq-1.2.2.tar.gz` from PyPi following instruction in the "Examples" section: https://pypi.org/project/uldaq/. I have saved it in my local `aquabat` repo. The `.gitignore` won't push it to github so feel free to do the same! 
 
 ```
 	$ tar -xvf uldaq-1.2.2.tar.gz
 	$ cd uldaq-1.2.2/examples
 	$ ./a_in.py
+```
+
+#### Run script with example data files
+```
+	$ python3 src/main.py -f --data-directory ./examples/ -c 4 --fs 50000
 ```
