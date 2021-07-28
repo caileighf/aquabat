@@ -131,3 +131,4 @@ dmypy.json
 
 # don't push uldaq examples to repo!
 uldaq-1.2.2*
+libuldaq-1.2.0*

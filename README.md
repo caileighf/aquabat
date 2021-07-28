@@ -5,7 +5,16 @@
    $ sudo apt install gcc g++ make
    $ sudo apt install libusb-1.0-0-dev
 ```
-
+#### Download and Build UL Lib
+```
+$ wget -N https://github.com/mccdaq/uldaq/releases/download/v1.2.0/libuldaq-1.2.0.tar.bz2
+$ tar -xvjf libuldaq-1.2.0.tar.bz2
+$ cd libuldaq-1.2.0
+$ ./configure && make
+$ sudo make install
+$ cd examples
+$ ./AIn
+```
 
 #### Install Python Packages
 ```
