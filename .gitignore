@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# don't push uldaq examples to repo!
+uldaq-1.2.2*
