@@ -208,7 +208,7 @@ if __name__ == "__main__":
     parser.add_argument('--data-directory', help='Directory where csv data from DAQ buffer is stored', default='./', required=False)
     parser.add_argument('-c', '--channels', help='Number of channels to display', default=2, required=False, type=int)
     parser.add_argument('--t-series-samples', help='Number of values to overlap in voltage time series (first N samples)', default=1000, required=False, type=int)
-    parser.add_argument('-fs', '--sample-rate', help='Sample rate in Hz', default=100000, required=False, type=int)
+    parser.add_argument('--fs', '--sample-rate', help='Sample rate in Hz', default=100000, required=False, type=int)
     parser.add_argument('--nfft', help='NFFT', default=1024, required=False, type=int)
     parser.add_argument('-d', '--debug', action="store_true", help="Print debug messages")
     parser.add_argument('-f', '--fullscreen', action="store_true", help="Print debug messages")
