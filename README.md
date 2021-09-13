@@ -32,5 +32,11 @@ First download `uldaq-1.2.2.tar.gz` from PyPi following instruction in the "Exam
 
 #### Run script with example data files
 ```
-	$ python3 src/main.py -f --data-directory ./examples/ -c 4 --fs 50000
+	$ python3 src/main.py -f --data-directory ./examples/ -c 4 -fs 50000
+```
+
+#### Run GUI and Simple Scan driver
+```
+	$ python3 src/main.py -f --data-directory ./data/ -c 4 -fs 1000
+	$ python3 src/simple_scan.py --data-directory ./data/ -c 4 -fs 1000
 ```
