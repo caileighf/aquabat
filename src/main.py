@@ -10,9 +10,18 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib import transforms
 from matplotlib.mlab import psd
+from collections import deque
+
+import signal
+# handle potential SIGINT from Ctrl+C
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 def get_newest_file(data_dir):
-    return sorted(pathlib.Path(data_dir).glob('1*.txt'))[-2]
+    try:
+        return sorted(pathlib.Path(data_dir).glob('1*.txt'))[-2]
+    except IndexError:
+        # no files in directory
+        return None
 #
 #   This method pull n channel data from file and returns list of floats
 #
@@ -27,18 +36,29 @@ def get_single_channel_data(selected_channel, filename):
             data.append(float(channel_data[selected_channel]))
     return(data)
 
+
 class SyncedPlots(QtWidgets.QWidget):
     """docstring for SyncedPlots"""
-    def __init__(self, widgets, data_dir, apptick_hz=1):
+    def __init__(self, widgets, data_dir, t_series_widget, apptick_hz=1, debug=False):
         super(SyncedPlots, self).__init__()
         self.widgets = widgets
         self.data_dir = data_dir
+        self.t_series_widget = t_series_widget
 
-        self.layout = QtWidgets.QHBoxLayout()
-        [self.layout.addWidget(widget) for widget in self.widgets]
-        self.setLayout(self.layout)
+        self.layout_h = QtWidgets.QHBoxLayout()
+        for widget in self.widgets:
+            self.layout_h.addWidget(widget)
+
+        self.setLayout(self.layout_h)
+
+        self.layout_v = QtWidgets.QVBoxLayout()
+        self.layout_v.stretch(1)
+        self.layout_v.addWidget(self.t_series_widget)
+
+        self.setLayout(self.layout_v)
 
         self.apptick_hz = apptick_hz
+        self.debug = debug
 
         self.timer = QtCore.QTimer()
         self.apptick_hz = apptick_hz
@@ -48,9 +68,12 @@ class SyncedPlots(QtWidgets.QWidget):
 
     def update(self):
         current_file = get_newest_file(self.data_dir)
-        for widget in self.widgets:
-            widget.update(current_file=current_file)
-        
+        if current_file:
+            for widget in self.widgets:
+                widget.update(current_file=current_file)
+            self.t_series_widget.update(current_file=current_file)
+        else:
+            if self.debug: print('No files in data directory....')
 
 class RTPlot(QtWidgets.QWidget):
     """docstring for RTPlot"""
@@ -70,12 +93,16 @@ class RTPlot(QtWidgets.QWidget):
 
         self.layout.addWidget(self.canvas)
 
-        self.gs = self.figure.add_gridspec(self.nrows, self.ncols)
+        self.gs = self.figure.add_gridspec(nrows=self.nrows, ncols=self.ncols)
         self.axes = [[]]
 
         for col in range(self.ncols):
             for row in range(self.nrows):
-                self.axes[col].append(self.figure.add_subplot(self.gs[row, col]))
+                # print(row, col)
+                try:
+                    self.axes[col].append(self.figure.add_subplot(self.gs[row, col]))
+                except IndexError:
+                    traceback.print_exc()
 
         self.ax = self.axes[0][0]
 
@@ -100,6 +127,39 @@ class RTPlot(QtWidgets.QWidget):
         self.update_axes(*args, **kwargs)
 
 
+class MultiChannelVoltageTSeriesPlot(RTPlot):
+    """docstring for MultiChannelVoltageTSeriesPlot"""
+    def __init__(self, channels, num_samples, nrows=1, ncols=1):
+        super(MultiChannelVoltageTSeriesPlot, self).__init__(nrows=nrows, ncols=ncols)
+        self.channels = channels
+        self.num_samples = num_samples
+        self.title = 'Voltage Timeseries for channels: {}'.format(*channels)
+        
+        # create t_series axis
+        self.axMultiTSeries = self.ax
+
+    def get_data(self, current_file):
+        data = []
+        for i in self.channels:
+            data.append(list(get_single_channel_data(filename=current_file, selected_channel=i)[:self.num_samples]))
+        return data
+
+    def update_axes(self, current_file):
+        data = self.get_data(current_file)
+
+        if data:
+            self.clear_axes()
+            self.axMultiTSeries.set_title(self.title)
+
+            for ch, t_series in zip(self.channels, data):
+                # print(ch, t_series[:5])
+                # channel, t_series of first n samples (defined by num_samples)
+                self.axMultiTSeries.plot([1.1, 2.2, 3.3])#t_series, label='Channel {}'.format(ch))
+            
+            # refresh canvas
+            self.canvas.draw()
+
+
 class SingleChannelPlot(RTPlot):
     """docstring for SingleChannelPlot"""
     def __init__(self, title='', channel=0, fs=100000, nfft=1024, duration=1):
@@ -118,7 +178,7 @@ class SingleChannelPlot(RTPlot):
         self.axSpec = self.axes[0][0]
         self.axPSD = self.axes[0][1]
         self.axVT = self.axes[0][2]
-
+    
     def get_data(self, current_file):
         # returns 1D vector of the voltage timeseries for a specific channel
         return get_single_channel_data(filename=current_file, selected_channel=self.channel)
@@ -147,6 +207,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--apptick', help='Apptick/Display update rate in Hz', required=False, type=float, default=10)
     parser.add_argument('--data-directory', help='Directory where csv data from DAQ buffer is stored', default='./', required=False)
     parser.add_argument('-c', '--channels', help='Number of channels to display', default=2, required=False, type=int)
+    parser.add_argument('--t-series-samples', help='Number of values to overlap in voltage time series (first N samples)', default=1000, required=False, type=int)
     parser.add_argument('--fs', help='Sample rate in Hz', default=100000, required=False, type=int)
     parser.add_argument('--nfft', help='NFFT', default=1024, required=False, type=int)
     parser.add_argument('-d', '--debug', action="store_true", help="Print debug messages")
@@ -170,7 +231,11 @@ if __name__ == "__main__":
         plot_widgets.append(SingleChannelPlot(channel=i, fs=args.fs, nfft=args.nfft))
 
     # add SyncedPlots widget to main window
-    layout.addWidget(SyncedPlots(widgets=plot_widgets, data_dir=args.data_directory))
+    layout.addWidget(SyncedPlots(widgets=plot_widgets, 
+                                 data_dir=args.data_directory,
+                                 debug=args.debug,
+                                 t_series_widget=MultiChannelVoltageTSeriesPlot(channels=list(range(args.channels - 1)),
+                                                                                num_samples=args.t_series_samples)))
 
     main_window.setLayout(layout)
     main_window.show()
