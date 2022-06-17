@@ -148,7 +148,7 @@ class MultiChannelVoltageTSeriesPlot(RTPlot):
         data = self.get_data(current_file)
 
         if data:
-            self.clear_axes()
+            # self.clear_axes()
             self.axMultiTSeries.set_title(self.title)
 
             for ch, t_series in zip(self.channels, data):
@@ -173,11 +173,45 @@ class SingleChannelPlot(RTPlot):
         self.fs = fs
         self.nfft = nfft
         self.duration = duration
+        self.cmap = 'viridis'
 
         # create attrs for each axes
         self.axSpec = self.axes[0][0]
         self.axPSD = self.axes[0][1]
         self.axVT = self.axes[0][2]
+
+        # self._init_param_editor()
+
+    def _init_param_editor(self):
+        self.params_editor_layout = QtWidgets.QFormLayout()
+        self.params_editor_layout.addRow()
+        
+        self.params_editor = QtWidgets.QForm()
+
+    @property
+    def user_config_params(self):
+        params = {
+            'title': self.title,
+            'sample-rate': self.fs,
+            'NFFT': self.nfft,
+            'cmap': self.cmap,
+        }
+
+    @user_config_params.setter
+    def user_config_params(self, params):
+        try:
+            params['title'] = str(params['title'])
+            params['sample-rate'] = int(params['sample-rate'])
+            params['NFFT'] = int(params['NFFT'])
+            params['cmap'] = str(params['cmap'])
+        except:
+            # TODO log this
+            raise
+        else:
+            self.title = params['title']
+            self.sample_rate = params['sample_rate']
+            self.nfft = params['NFFT']
+            self.cmap = params['cmap']
     
     def get_data(self, current_file):
         # returns 1D vector of the voltage timeseries for a specific channel
@@ -190,7 +224,7 @@ class SingleChannelPlot(RTPlot):
             self.clear_axes()
             self.ax.set_title(self.title)
 
-            Pxx, freqs, bins, im = self.axSpec.specgram(data, NFFT=self.nfft, Fs=self.fs)
+            Pxx, freqs, bins, im = self.axSpec.specgram(data, NFFT=self.nfft, Fs=self.fs, cmap=self.cmap)
             self.axPSD.psd(Pxx, self.nfft, self.fs)
             self.axVT.plot(data)
             # refresh canvas
@@ -218,6 +252,8 @@ if __name__ == "__main__":
 
     # create main window widget
     main_window = QtWidgets.QWidget()
+    # main_window = QtWidgets.QMainWindow()
+    # [print(attr.ljust(35, '.'), getattr(main_window, attr)) for attr in dir(main_window)]
 
     # if fullscreen
     if args.fullscreen:
@@ -239,6 +275,7 @@ if __name__ == "__main__":
 
     main_window.setLayout(layout)
     main_window.show()
+
     rc = 0
     try:
         rc = main(app)

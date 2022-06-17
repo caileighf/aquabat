@@ -121,6 +121,13 @@ def main(args):
 
         # Get a list of supported ranges and validate the range index.
         ranges = ai_info.get_ranges(input_mode)
+
+        # let user pick range
+        [print(f'[{i}]: {r.name}') for i, r in enumerate(ranges)]
+        range_index_input = input(f'\nSelect index of range from options: ')
+        if range_index_input and int(range_index_input) >= 0 and int(range_index_input) <= len(ranges):
+            range_index = int(range_index_input)
+
         if range_index >= len(ranges):
             range_index = len(ranges) - 1
 
