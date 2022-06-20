@@ -174,6 +174,7 @@ class SingleChannelPlot(RTPlot):
         self.nfft = nfft
         self.duration = duration
         self.cmap = 'viridis'
+        self.waterfall_data = deque(maxlen=int(fs + fs / 2))
 
         # create attrs for each axes
         self.axSpec = self.axes[0][0]
@@ -221,10 +222,14 @@ class SingleChannelPlot(RTPlot):
         data = self.get_data(current_file)
 
         if data:
+            self.waterfall_data.append(data)
+            # data = self.waterfall_data
+
             self.clear_axes()
             self.ax.set_title(self.title)
 
-            Pxx, freqs, bins, im = self.axSpec.specgram(data, NFFT=self.nfft, Fs=self.fs, cmap=self.cmap)
+            Pxx, freqs, bins, im = self.axSpec.specgram(data, NFFT=self.nfft, Fs=self.fs, cmap=self.cmap, scale='dB')
+            # self.axPSD.imshow(freqs)
             self.axPSD.psd(Pxx, self.nfft, self.fs)
             self.axVT.plot(data)
             # refresh canvas
@@ -267,11 +272,17 @@ if __name__ == "__main__":
         plot_widgets.append(SingleChannelPlot(channel=i, fs=args.fs, nfft=args.nfft))
 
     # add SyncedPlots widget to main window
-    layout.addWidget(SyncedPlots(widgets=plot_widgets, 
-                                 data_dir=args.data_directory,
-                                 debug=args.debug,
-                                 t_series_widget=MultiChannelVoltageTSeriesPlot(channels=list(range(args.channels - 1)),
-                                                                                num_samples=args.t_series_samples)))
+    if args.channels > 1:
+        layout.addWidget(SyncedPlots(widgets=plot_widgets, 
+                                     data_dir=args.data_directory,
+                                     debug=args.debug,
+                                     t_series_widget=MultiChannelVoltageTSeriesPlot(channels=list(range(args.channels - 1)),
+                                                                                    num_samples=args.t_series_samples)))
+    else:
+        layout.addWidget(SyncedPlots(widgets=plot_widgets, 
+                                     data_dir=args.data_directory,
+                                     debug=args.debug,
+                                     t_series_widget=SingleChannelPlot(fs=args.fs, nfft=args.nfft)))
 
     main_window.setLayout(layout)
     main_window.show()

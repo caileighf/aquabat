@@ -191,14 +191,20 @@ def main(args):
                         filename = args.data_directory.joinpath('{}.txt'.format(aq_start_time))
                         # update aq_start_time
                         aq_start_time += float(args.file_duration)
+
                         made_copy = threading.Event()
-                        threading.Thread(target=dump_csv_data, 
-                                         kwargs={
-                                            'data': file_buffer,
-                                            'filename': filename,
-                                            'made_copy': made_copy,
-                                            }).start()
-                        made_copy.wait()
+                        if args.single_threaded:
+                            threading.Thread(target=dump_csv_data, 
+                                             kwargs={
+                                                'data': file_buffer,
+                                                'filename': filename,
+                                                'made_copy': made_copy,
+                                                }).start()
+                            made_copy.wait()
+                        else:
+                            dump_csv_data(data=file_buffer,
+                                          filename=filename,
+                                          made_copy=made_copy)
                         # now we can clear file_buffer
                         file_buffer = []
 
@@ -249,6 +255,7 @@ if __name__ == "__main__":
     parser.add_argument('--file-duration', help='File duration seconds', required=False, type=int, default=1)
     parser.add_argument('--data-directory', help='Directory where csv data will be stored', default='./', required=False)
     parser.add_argument('-c', '--channels', help='Number of channels to display', default=2, required=False, type=int)
+    parser.add_argument('-s', '--single-threaded', action="store_true", help="Run single threaded (useful for machines with less cores)")
     parser.add_argument('-d', '--debug', action="store_true", help="Print debug messages")
     args = parser.parse_args()
 

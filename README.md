@@ -1,6 +1,6 @@
 ## aquabat -- 2021 WHOI Hack-a-thon
 
-#### Install Dependencies 
+#### Install Dependencies
 ```
    $ sudo apt install gcc g++ make
    $ sudo apt install libusb-1.0-0-dev
